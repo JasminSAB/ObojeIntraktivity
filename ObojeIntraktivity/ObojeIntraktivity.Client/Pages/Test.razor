@@ -1,0 +1,66 @@
+﻿@page "/test"
+@rendermode InteractiveAuto
+@attribute [StreamRendering(true)]
+@inject PersistentComponentState ApplicationState
+@using Shared
+@implements IDisposable
+@inject IStringListService service;
+
+@if (listaStrigova.Count == 0)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Naslov</th>
+        </tr>
+        </thead>
+        <tbody>
+            @foreach (var str in listaStrigova)
+        {
+            <tr>
+                    <td>@str</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+
+@code {
+
+    private List<string>? listaStrigova; 
+    private PersistingComponentStateSubscription persistingSubscription; 
+
+    protected override async Task OnInitializedAsync()
+    {
+        persistingSubscription = ApplicationState.RegisterOnPersisting(PersistData);
+
+        if (!ApplicationState.TryTakeFromJson<List<string>>("listastringovakey", out var restored))
+        {
+            // INFO: If this component is being prerendered by the server, 
+            //       then the server implementation of WeatherForecastService will be used instead of the one in the client.
+            
+            listaStrigova = (await service.GetStringList());
+        }
+        else
+        {
+            listaStrigova = restored!;
+        }
+    }
+
+    private Task PersistData()
+    {
+        ApplicationState.PersistAsJson("listastringovakey", listaStrigova);
+
+        return Task.CompletedTask;
+    }
+
+    void IDisposable.Dispose()
+    {
+        persistingSubscription.Dispose();
+    }
+}
